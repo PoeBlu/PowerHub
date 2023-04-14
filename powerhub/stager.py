@@ -99,7 +99,7 @@ callback_url = '%s://%s:%d/%s' % (
     args.PROTOCOL,
     args.URI_HOST,
     args.URI_PORT,
-    args.URI_PATH+'/' if args.URI_PATH else '',
+    f'{args.URI_PATH}/' if args.URI_PATH else '',
 )
 
 

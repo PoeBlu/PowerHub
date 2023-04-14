@@ -95,18 +95,18 @@ def payload_m():
     if 'm' not in request.args:
         return Response('error')
     n = int(request.args.get('m'))
-    if n < len(modules):
-        modules[n].activate()
-        if 'c' in request.args:
-            resp = b64encode(encrypt(compress(modules[n].code), key)),
-        else:
-            resp = b64encode(encrypt(modules[n].code, key)),
-        return Response(
-            resp,
-            content_type='text/plain; charset=utf-8'
-        )
-    else:
+    if n >= len(modules):
         return Response("not found")
+    modules[n].activate()
+    resp = (
+        (b64encode(encrypt(compress(modules[n].code), key)),)
+        if 'c' in request.args
+        else (b64encode(encrypt(modules[n].code, key)),)
+    )
+    return Response(
+        resp,
+        content_type='text/plain; charset=utf-8'
+    )
 
 
 @app.route('/0')
@@ -117,12 +117,7 @@ def payload_0():
         "callback_url": callback_url,
         "key": key,
     }
-    result = render_template(
-                    "amsi.ps1",
-                    **context,
-                    content_type='text/plain'
-    )
-    return result
+    return render_template("amsi.ps1", **context, content_type='text/plain')
 
 
 @app.route('/1')
@@ -194,18 +189,16 @@ def reload_modules():
         modules = import_modules()
         flash("Modules reloaded (press F5 to see them)", "success")
     except Exception as e:
-        flash("Error while reloading modules: %s" % str(e), "danger")
+        flash(f"Error while reloading modules: {str(e)}", "danger")
     return render_template("messages.html")
 
 
 def debug():
     m = request.args.get('m')
-    result = [x for x in modules if m in x.name]
-    if result:
-        response = Response(
-            b64decode(result[0].code),
-            content_type='text/plain; charset=utf-8'
+    return (
+        Response(
+            b64decode(result[0].code), content_type='text/plain; charset=utf-8'
         )
-    else:
-        response = Response("not found")
-    return response
+        if (result := [x for x in modules if m in x.name])
+        else Response("not found")
+    )
